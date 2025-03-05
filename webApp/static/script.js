@@ -1,0 +1,157 @@
+initSomeGifs()
+const expressions = document.querySelector('.expression-list');
+const input = document.getElementById('user-input');
+
+const nextButton = document.getElementById('send-button');
+nextButton.onclick = e => handleUserInput(e);
+
+function initSomeGifs() {
+    const welcomeStaticPath = './assets/img/welcome_static.gif';
+    const welcomePath = './assets/img/welcome.gif';
+    const welcome = document.getElementById('welcome');
+    welcome.onmouseover = e => e.target.src = welcomePath;
+    welcome.onmouseout = e => e.target.src = welcomeStaticPath;
+
+    const nextImageStaticPath = './assets/img/next_static.gif';
+    const nextImagePath = './assets/img/next.gif';
+    const nextImage = document.getElementById('send-image');
+    nextImage.onmouseover = e => e.target.src = nextImagePath;
+    nextImage.onmouseout = e => e.target.src = nextImageStaticPath;
+}
+
+async function handleUserInput(event) {
+    event.preventDefault();
+    nextButton.disabled = true;
+
+    if (!validateUserInput(input)) {
+        nextButton.disabled = false;
+        return
+    }
+
+    toggleLoader();
+
+    let currElement;
+    let id;
+    await fetch("http://localhost:8081/api/v1/calculate", {
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ expression: input.value })
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            id = data.id;
+            currElement = createElement(input.value, id);
+            if (expressions.querySelector('.entry-list__placeholder')) {
+                expressions.removeChild(document.querySelector('.entry-list__placeholder'));
+            }
+            expressions.insertBefore(currElement, expressions.firstChild);
+
+        });
+
+    toggleLoader()
+    input.value = '';
+    nextButton.disabled = false;
+
+
+    fetch("http://localhost:8081/api/v1/expressions/" + id)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status != "pending") {
+                let status = currElement.querySelector('.entry__status');
+                let result = currElement.querySelector('.entry__result');
+                status.textContent = data.status;
+                result.textContent = data.result;
+            } else {
+                setTimeout(fetchData, 3000, element);
+            }
+        })
+        .catch(error => {
+            console.error(error);
+        });
+
+}
+
+function validateUserInput(input) {
+    const regex = /^[0-9.()+\-*\/]+$/;
+    if (!regex.test(input.value)) {
+        nextButton.classList.add('shake');
+        input.style.color = 'red';
+        setTimeout(() => { nextButton.classList.remove('shake'); input.style.color = null; }, 400);
+        return false;
+    }
+
+    return true;
+}
+
+function disableButton() {
+    if (nextButton) nextButton.disabled = true
+}
+
+function toggleLoader() {
+    const loader = document.getElementById('loader');
+    loader.classList.toggle('hidden');
+    nextButton.classList.toggle('hidden');
+}
+
+function createElement(expression, id) {
+
+    const container = document.createElement('article');
+    container.classList.add('entry');
+    container.id = `entry-${id}`;
+
+    const entryInput = document.createElement('div');
+    entryInput.classList.add('entry__input');
+    entryInput.textContent = expression;
+    container.appendChild(entryInput);
+
+    const entryId = document.createElement('div');
+    entryId.classList.add('entry__id');
+    entryId.textContent = 'id: ' + id;
+    container.appendChild(entryId);
+
+    const entryStatus = document.createElement('div');
+    entryStatus.classList.add('entry__status');
+    entryStatus.textContent = 'status: pending';
+    container.appendChild(entryStatus);
+
+    const entryResult = document.createElement('div');
+    entryResult.classList.add('entry__result');
+    entryResult.textContent = 'result: --/--';
+    container.appendChild(entryResult);
+
+    return container;
+}
+
+function fetchData(element) {
+    fetch('http://localhost:8080/api')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.text();
+        })
+        .then(data => {
+            console.log(data);
+            element.textContent = data;
+            if (data >= 5) {
+                return;
+            }
+            // как добавить учет времени уже отправленного
+            setTimeout(fetchData, 3000, element);
+        })
+        .catch(error => {
+            console.error('Ошибка при выполнении запроса:', error);
+        });
+}
