@@ -21,8 +21,8 @@ func (l *AgentLogger) Error(err error) {
 	l.err.Println(err)
 }
 
-func (l *AgentLogger) Println(msg string) {
-	l.info.Println(msg)
+func (l *AgentLogger) Info(msg string, args... any) {
+	l.info.Printf(msg+"-n", args...)
 }
 
 var agentLog = NewAgentLogger()

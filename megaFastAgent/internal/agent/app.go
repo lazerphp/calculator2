@@ -32,7 +32,7 @@ func NewAgent() *Agent {
 }
 
 func (s *Agent) Run() {
-	agentLog.Println("агент стартовал")
+	agentLog.Info("агент стартовал")
 
 	jobs := make(chan task, s.config.limit)
 	results := make(chan taskResult, s.config.limit)

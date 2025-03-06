@@ -14,6 +14,7 @@ import (
 	"time"
 )
 
+// беру переменные из .env файла
 var token = os.Getenv("API_TOKEN")
 var time_addition, _ = strconv.Atoi(os.Getenv("TIME_ADDITION_MS"))
 var time_substraction, _ = strconv.Atoi(os.Getenv("TIME_SUBTRACTION_MS"))
@@ -31,7 +32,7 @@ type allExpressions struct {
 	mu      sync.Mutex
 }
 
-// список всех выражений.
+// список всех выражений
 var expressions = allExpressions{map[expressionId]expressionData{}, sync.Mutex{}}
 
 // geerateExpressionId генерирует id для выражения.
@@ -67,7 +68,7 @@ func processExpression(input string) expressionId {
 		expressions.mu.Lock()
 		defer expressions.mu.Unlock()
 		expressions.entries[id] = entry
-		return ""
+		return id
 	}
 
 	tree := calc.BuildTree(tokens)
@@ -87,11 +88,12 @@ func processExpression(input string) expressionId {
 			status = "resolved"
 			result = val
 		case <-chErr:
-			status = "error"
+			status = "internal error"
 			result = 0
 			cancel()
 		}
 
+		log.Printf("Выражение %v обработано со статусом %v и результатом %v", id, status, result)
 		entry := expressionData{id, status, result}
 		expressions.mu.Lock()
 		defer expressions.mu.Unlock()
@@ -113,12 +115,15 @@ func receiveExpression(w http.ResponseWriter, r *http.Request) {
 	if invalidRequest != nil {
 		errResponse := &struct {
 			Result string `json:"error"`
-		}{"нет такого выражения"}
+		}{"невалидное тело запроса"}
 		jsonMsg, _ := json.Marshal(errResponse)
+		log.Println("Невалидный запрос: ", invalidRequest)
 		http.Error(w, string(jsonMsg), http.StatusNotFound)
+		return
 	}
 
 	id := processExpression(request.Expression)
+	log.Printf("Запрос %v успешно обработан\n", id)
 
 	response, _ := json.Marshal(&struct {
 		Id expressionId `json:"id"`
@@ -142,8 +147,8 @@ func listExpressions(w http.ResponseWriter, r *http.Request) {
 	response, _ := json.Marshal(&struct {
 		Expressions []expressionData `json:"expressions"`
 	}{showExpressions})
-	w.WriteHeader(http.StatusOK)
 
+	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(response)
 }
@@ -155,8 +160,8 @@ func showExpression(w http.ResponseWriter, r *http.Request) {
 	expressions.mu.Lock()
 	defer expressions.mu.Unlock()
 
-	w.WriteHeader(http.StatusNotFound)
 	if _, ok := expressions.entries[id]; !ok {
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
@@ -206,7 +211,7 @@ func showTask(w http.ResponseWriter, r *http.Request) {
 
 	response, _ := json.Marshal(struct {
 		Task taskResponse `json:"task"`
-	}{taskResponse{string(task.Id), task.Arg1, task.Arg2, task.Operation, timeLimit}}) // может в зависимости от операции выдать время?
+	}{taskResponse{string(task.Id), task.Arg1, task.Arg2, task.Operation, timeLimit}})
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
@@ -253,7 +258,7 @@ func outer(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
-				log.Printf("Panic: %v", err)
+				log.Printf("Произошла внутрення ошибка: %v", err)
 
 				errResponse := &struct {
 					Result string `json:"error"`
@@ -261,8 +266,15 @@ func outer(next http.HandlerFunc) http.HandlerFunc {
 
 				jsonMsg, _ := json.Marshal(errResponse)
 				http.Error(w, string(jsonMsg), http.StatusInternalServerError)
+				return
 			}
 		}()
+
+		// Мой сервер добрый, принимает запросы с других источников)
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
 		next(w, r)
 	}
 }
@@ -271,9 +283,9 @@ func outer(next http.HandlerFunc) http.HandlerFunc {
 func Orchestrate() {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/api/v1/calculate", outer(receiveExpression))
-	mux.HandleFunc("/api/v1/expressions", outer(listExpressions))
-	mux.HandleFunc("/api/v1/expressions/{id}", outer(showExpression))
+	mux.HandleFunc("POST /api/v1/calculate", outer(receiveExpression))
+	mux.HandleFunc("GET /api/v1/expressions", outer(listExpressions))
+	mux.HandleFunc("GET /api/v1/expressions/{id}", outer(showExpression))
 	mux.HandleFunc("GET /internal/task", outer(showTask))
 	mux.HandleFunc("POST /internal/task", outer(receiveTaskSolution))
 	http.ListenAndServe(":80", mux)

@@ -1,0 +1,86 @@
+
+.images {
+    position: fixed;
+    z-index: -10;
+    width: 100vw;
+    height: 100vh;
+}
+
+.images .img {
+    position: absolute;
+}
+
+.images .img-1 {
+    top: 90%;
+    left: 20%;
+}
+
+.images .img-2 {
+    top: 50%;
+    left: 5%;
+}
+
+.images .img-3 {
+    top: 80%;
+    left: 85%;
+}
+
+.images .img-4 {
+    top: 40%;
+    left: 70%;
+}
+
+.images .img-5 {
+    top: 40%;
+    left: 70%;
+}
+
+.images .img-6 {
+    top: 20%;
+    left: 60%;
+}
+
+.images .img-7 {
+    top: 15%;
+    left: 70%;
+}
+
+.images .img-8 {
+    top: 40%;
+    left: 10%;
+}
+
+.images .img-9 {
+    top: 10%;
+    left: 80%;
+}
+
+.images .img-10 {
+    top: 70%;
+    left: 10%;
+}
+
+.images .img-11 {
+    top: 70%;
+    left: 80%;
+}
+
+.images .img-12 {
+    top: 52%;
+    left: 75%;
+}
+
+.images .img-13 {
+    top: 40%;
+    left: 7%;
+}
+
+.images .img-14 {
+    top: 5%;
+    left: 10%;
+}
+
+.images .img-15 {
+    top: 90%;
+    left: 2%;
+}

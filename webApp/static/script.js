@@ -4,6 +4,7 @@ const input = document.getElementById('user-input');
 
 const nextButton = document.getElementById('send-button');
 nextButton.onclick = e => handleUserInput(e);
+input.onkeyup = e => e.key == "Enter" && handleUserInput(e);
 
 function initSomeGifs() {
     const welcomeStaticPath = './assets/img/welcome_static.gif';
@@ -35,13 +36,13 @@ async function handleUserInput(event) {
     await fetch("http://localhost:8081/api/v1/calculate", {
         method: "POST",
         headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'text/plain'
         },
-        body: JSON.stringify({ expression: input.value })
+        body: JSON.stringify({ expression: input.value }),
     })
         .then(response => {
             if (!response.ok) {
-                throw new Error('Network response was not ok');
+                throw new Error(`Network response was not ok? status: ${response.status}`);
             }
             return response.json();
         })
@@ -52,35 +53,41 @@ async function handleUserInput(event) {
                 expressions.removeChild(document.querySelector('.entry-list__placeholder'));
             }
             expressions.insertBefore(currElement, expressions.firstChild);
+            setTimeout(makeFetchRequest, 1000, id, currElement);
+            input.value = '';
 
+        })
+        .catch(error => {
+            console.error(error);
+            alert(`Произошла ошибка при отпрравке: ${error}`);
         });
 
-    toggleLoader()
-    input.value = '';
     nextButton.disabled = false;
+    toggleLoader();
 
+}
 
-    fetch("http://localhost:8081/api/v1/expressions/" + id)
+function makeFetchRequest(id, currElement) {
+    fetch(`http://localhost:8081/api/v1/expressions/${id}`)
         .then(response => {
             if (!response.ok) {
-                throw new Error('Network response was not ok');
+                throw new Error(`Network response was not ok? status: ${response.status}`);
             }
             return response.json();
         })
         .then(data => {
-            if (data.status != "pending") {
+            if (data.expression.status != "pending") {
                 let status = currElement.querySelector('.entry__status');
                 let result = currElement.querySelector('.entry__result');
-                status.textContent = data.status;
-                result.textContent = data.result;
+                status.textContent = 'status: ' + data.expression.status;
+                result.textContent = 'result: ' + data.expression.result;
             } else {
-                setTimeout(fetchData, 3000, element);
+                setTimeout(fetchResult, 3000, element);
             }
         })
         .catch(error => {
             console.error(error);
         });
-
 }
 
 function validateUserInput(input) {
@@ -93,10 +100,6 @@ function validateUserInput(input) {
     }
 
     return true;
-}
-
-function disableButton() {
-    if (nextButton) nextButton.disabled = true
 }
 
 function toggleLoader() {
@@ -134,7 +137,7 @@ function createElement(expression, id) {
     return container;
 }
 
-function fetchData(element) {
+function fetchResult(element) {
     fetch('http://localhost:8080/api')
         .then(response => {
             if (!response.ok) {
@@ -143,13 +146,12 @@ function fetchData(element) {
             return response.text();
         })
         .then(data => {
-            console.log(data);
             element.textContent = data;
             if (data >= 5) {
                 return;
             }
-            // как добавить учет времени уже отправленного
-            setTimeout(fetchData, 3000, element);
+
+            setTimeout(fetchResult, 3000, element);
         })
         .catch(error => {
             console.error('Ошибка при выполнении запроса:', error);

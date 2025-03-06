@@ -3,14 +3,12 @@ package agent
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"strconv"
 	"sync"
 	"time"
 )
-
 
 type task struct {
 	Id             string  `json:"id"`
@@ -120,7 +118,6 @@ func loadTask(jobs chan<- task, url, token string) {
 }
 
 func sendResult(data taskResult, url, token string) {
-	fmt.Println("data in sendResult", data)
 	jsonData, _ := json.Marshal(data)
 	client := &http.Client{
 		Timeout: time.Second * 5,
