@@ -74,7 +74,7 @@ func (tasks *pendingTasks) SetTask(data taskData, ch chan float64, chErr chan er
 
 var PendingTasks = pendingTasks{[]taskId{}, map[taskId]taskRequest{}, sync.Mutex{}}
 
-// geerateExpressionId генерирует id для выражения.
+// generateExpressionId генерирует id для выражения.
 //
 // Возвращаемое значение:
 //

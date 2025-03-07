@@ -57,11 +57,12 @@ func PrepareExp(input string) ([]any, error) {
 				if !(prev >= '0' && prev <= '9' || slices.Contains([]rune{0, '(', ')', '*', '/'}, prev)) {
 					return nil, errors.New("неуместный знак -")
 				}
+
 				// унарный минус
 				if prev == '*' || prev == '/' || prev == 0 {
 					x = '~'
-					continue
 				}
+
 			default:
 				if !(prev >= '0' && prev <= '9' || prev == ')') {
 					return nil, errors.New("неуместный оператор")
@@ -113,7 +114,9 @@ func PrepareExp(input string) ([]any, error) {
 		}
 
 		prev = x
+
 	}
+
 	if len(buf) != 0 {
 		bufNum, _ := strconv.ParseFloat(string(buf), 64)
 		res = append(res, bufNum)
@@ -122,6 +125,7 @@ func PrepareExp(input string) ([]any, error) {
 	if !(prev >= '0' && prev <= '9' || prev == ')') {
 		return nil, errors.New("незаконченное выражение")
 	}
+	
 	if balanceBrackets != 0 {
 		return nil, errors.New("лишние скобки")
 	}

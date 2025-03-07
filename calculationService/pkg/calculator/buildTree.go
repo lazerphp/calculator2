@@ -112,7 +112,13 @@ func BuildTree(arr []any) *Tree {
 	return res
 }
 
+// функция для простого вывода дерева
+//
+// принимает дерево *Tree и число отступов. При вызове cnt ставьте 0, мне лень делать обертку.
+//
+// используйте для отладки
 func WalkTree(t *Tree, cnt int) {
+
 	for range cnt {
 		fmt.Print("|--")
 	}
