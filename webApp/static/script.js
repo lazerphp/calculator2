@@ -36,7 +36,7 @@ async function handleUserInput(event) {
     await fetch("http://localhost:8081/api/v1/calculate", {
         method: "POST",
         headers: {
-            'Content-Type': 'text/plain'
+            'Content-Type': 'text/plain' // эээхххууухххх...
         },
         body: JSON.stringify({ expression: input.value }),
     })
@@ -78,11 +78,14 @@ function makeFetchRequest(id, currElement) {
         .then(data => {
             if (data.expression.status != "pending") {
                 let status = currElement.querySelector('.entry__status');
-                let result = currElement.querySelector('.entry__result');
                 status.textContent = 'status: ' + data.expression.status;
-                result.textContent = 'result: ' + data.expression.result;
+
+                if (data.expression.status == "resolved") {
+                    let result = currElement.querySelector('.entry__result');
+                    result.textContent = 'result: ' + data.expression.result;
+                }
             } else {
-                setTimeout(fetchResult, 3000, element);
+                setTimeout(makeFetchRequest, 3000, id, currElement);
             }
         })
         .catch(error => {
@@ -91,7 +94,7 @@ function makeFetchRequest(id, currElement) {
 }
 
 function validateUserInput(input) {
-    const regex = /^[0-9.()+\-*\/]+$/;
+    const regex = /^[ 0-9.()+\-*\/]+$/;
     if (!regex.test(input.value)) {
         nextButton.classList.add('shake');
         input.style.color = 'red';
@@ -135,25 +138,4 @@ function createElement(expression, id) {
     container.appendChild(entryResult);
 
     return container;
-}
-
-function fetchResult(element) {
-    fetch('http://localhost:8080/api')
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.text();
-        })
-        .then(data => {
-            element.textContent = data;
-            if (data >= 5) {
-                return;
-            }
-
-            setTimeout(fetchResult, 3000, element);
-        })
-        .catch(error => {
-            console.error('Ошибка при выполнении запроса:', error);
-        });
 }
